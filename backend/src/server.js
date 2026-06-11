@@ -18,35 +18,30 @@ const { errorHandler } = require('./middleware/errorMiddleware');
 const socketHandler = require('./sockets/socketHandler');
 
 const app = express();
-const server = http.createServer(app);
 
-//  CORS
+// CORS
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: process.env.CLIENT_URL || '*',
   credentials: true,
 }));
 
-//  Body Parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-//  ROOT ROUTE (FIX for "Cannot GET /")
+// ROOT
 app.get("/", (req, res) => {
-  res.send(" CodeSync Backend is Running");
+  res.send("CodeSync Backend is Running");
 });
 
-//  HEALTH CHECK
+// HEALTH
 app.get("/health", (req, res) => {
-  res.json({
-    status: "OK",
-    message: "CodeSync Backend is running smoothly"
-  });
+  res.json({ status: "OK" });
 });
 
-//  DB CONNECTION
+// DB
 connectDB();
 
-//  API ROUTES
+// ROUTES
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/problems', problemRoutes);
@@ -55,13 +50,15 @@ app.use('/api/code', codeRoutes);
 app.use('/api/contests', contestRoutes);
 app.use('/api/interviews', interviewRoutes);
 
-//  ERROR HANDLER
+// ERROR HANDLER
 app.use(errorHandler);
 
-//  SOCKET.IO
+// SOCKET
+const server = http.createServer(app);
+
 const io = socketIo(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: process.env.CLIENT_URL || '*',
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -69,9 +66,7 @@ const io = socketIo(server, {
 
 socketHandler(io);
 
-//  START SERVER
-const PORT = process.env.PORT || 5000;
+//  IMPORTANT: VERCEL me listen mat karo
+// server.listen(PORT) YAHAN NAHI HOGA
 
-server.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-});
+module.exports = app;
