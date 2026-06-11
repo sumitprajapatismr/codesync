@@ -1,87 +1,124 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
-// Helper function to generate JWT
+// Generate JWT Token
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'codesync_secret_key_123', {
-    expiresIn: '30d',
-  });
+  return jwt.sign(
+    { id },
+    process.env.JWT_SECRET,
+    { expiresIn: '30d' }
+  );
 };
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
-// @access  Public
+/* =========================
+   REGISTER USER
+========================= */
 const registerUser = async (req, res, next) => {
   const { name, email, password, avatar } = req.body;
 
   try {
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required"
+      });
+    }
+
     const userExists = await User.findOne({ email });
 
     if (userExists) {
-      return res.status(400).json({ success: false, message: 'User already exists with this email' });
+      return res.status(400).json({
+        success: false,
+        message: "User already exists"
+      });
     }
 
     const user = await User.create({
       name,
       email,
-      password,
-      avatar: avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${name || 'CodeSync'}`,
+      password, // assume schema hashes it (pre-save hook)
+      avatar: avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${name}`
     });
 
-    if (user) {
-      res.status(201).json({
-        success: true,
-        data: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          avatar: user.avatar,
-          rating: user.rating,
-          solvedProblems: user.solvedProblems,
-          token: generateToken(user._id),
-        },
-      });
-    } else {
-      res.status(400).json({ success: false, message: 'Invalid user data' });
-    }
+    res.status(201).json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        rating: user.rating,
+        solvedProblems: user.solvedProblems,
+        token: generateToken(user._id)
+      }
+    });
+
   } catch (error) {
-    next(error);
+    console.log("Register Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Registration failed"
+    });
   }
 };
 
-// @desc    Authenticate user & get token
-// @route   POST /api/auth/login
-// @access  Public
+/* =========================
+   LOGIN USER
+========================= */
 const loginUser = async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email }).populate('solvedProblems');
-
-    if (user && (await user.comparePassword(password))) {
-      res.json({
-        success: true,
-        data: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          avatar: user.avatar,
-          rating: user.rating,
-          solvedProblems: user.solvedProblems,
-          token: generateToken(user._id),
-        },
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required"
       });
-    } else {
-      res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password"
+      });
+    }
+
+    const isMatch = await user.comparePassword(password);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        rating: user.rating,
+        solvedProblems: user.solvedProblems,
+        token: generateToken(user._id)
+      }
+    });
+
   } catch (error) {
-    next(error);
+    console.log("Login Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Login failed"
+    });
   }
 };
 
-// @desc    Get user profile (current session)
-// @route   GET /api/auth/me
-// @access  Private
+/* =========================
+   GET CURRENT USER
+========================= */
 const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id)
@@ -89,21 +126,29 @@ const getMe = async (req, res, next) => {
       .populate('friends', 'name email avatar rating')
       .populate('friendRequests', 'name email avatar rating');
 
-    if (user) {
-      res.json({
-        success: true,
-        data: user,
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
       });
-    } else {
-      res.status(404).json({ success: false, message: 'User not found' });
     }
+
+    res.json({
+      success: true,
+      data: user
+    });
+
   } catch (error) {
-    next(error);
+    console.log("GetMe Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
   }
 };
 
 module.exports = {
   registerUser,
   loginUser,
-  getMe,
+  getMe
 };
