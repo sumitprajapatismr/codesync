@@ -17,13 +17,24 @@ const { errorHandler } = require('./middleware/errorMiddleware');
 const app = express();
 
 // =========================
-// CORS FIX (IMPORTANT)
+// FIXED CORS (FINAL)
 // =========================
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://codesync-sooty-three.vercel.app"
-  ],
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      "http://localhost:5173",
+      "https://codesync-sooty-three.vercel.app"
+    ];
+
+    // allow server-to-server / curl requests
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, true); // allow all to avoid Vercel CORS issues
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
@@ -33,7 +44,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ROOT ROUTE
+// ROOT
 app.get("/", (req, res) => {
   res.send("CodeSync Backend is Running");
 });
@@ -46,7 +57,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-// DB CONNECTION
+// DB CONNECT
 connectDB();
 
 // API ROUTES
@@ -61,6 +72,5 @@ app.use('/api/interviews', interviewRoutes);
 // ERROR HANDLER
 app.use(errorHandler);
 
-// IMPORTANT: NO server.listen() (Vercel serverless)
-
+// IMPORTANT FOR VERCEL
 module.exports = app;
