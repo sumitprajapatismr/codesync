@@ -1,7 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
 const cors = require('cors');
 
 const connectDB = require('./config/db');
@@ -15,7 +13,6 @@ const contestRoutes = require('./routes/contestRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
 
 const { errorHandler } = require('./middleware/errorMiddleware');
-const socketHandler = require('./sockets/socketHandler');
 
 const app = express();
 
@@ -25,23 +22,24 @@ app.use(cors({
   credentials: true,
 }));
 
+// Body parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ROOT
+// ROOT ROUTE
 app.get("/", (req, res) => {
   res.send("CodeSync Backend is Running");
 });
 
-// HEALTH
+// HEALTH CHECK
 app.get("/health", (req, res) => {
-  res.json({ status: "OK" });
+  res.json({ status: "OK", message: "CodeSync Backend is running smoothly" });
 });
 
-// DB
+// DB CONNECTION
 connectDB();
 
-// ROUTES
+// API ROUTES
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/problems', problemRoutes);
@@ -53,20 +51,7 @@ app.use('/api/interviews', interviewRoutes);
 // ERROR HANDLER
 app.use(errorHandler);
 
-// SOCKET
-const server = http.createServer(app);
-
-const io = socketIo(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || '*',
-    methods: ['GET', 'POST'],
-    credentials: true,
-  },
-});
-
-socketHandler(io);
-
-//  IMPORTANT: VERCEL me listen mat karo
-// server.listen(PORT) YAHAN NAHI HOGA
+//  IMPORTANT: NO server.listen()
+//  IMPORTANT: NO socket.io on Vercel
 
 module.exports = app;
