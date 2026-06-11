@@ -16,10 +16,17 @@ const { errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
 
-// CORS
+// =========================
+// CORS FIX (IMPORTANT)
+// =========================
 app.use(cors({
-  origin: process.env.CLIENT_URL || '*',
+  origin: [
+    "http://localhost:5173",
+    "https://codesync-sooty-three.vercel.app"
+  ],
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 // Body parser
@@ -33,7 +40,10 @@ app.get("/", (req, res) => {
 
 // HEALTH CHECK
 app.get("/health", (req, res) => {
-  res.json({ status: "OK", message: "CodeSync Backend is running smoothly" });
+  res.json({
+    status: "OK",
+    message: "CodeSync Backend is running smoothly"
+  });
 });
 
 // DB CONNECTION
@@ -51,7 +61,6 @@ app.use('/api/interviews', interviewRoutes);
 // ERROR HANDLER
 app.use(errorHandler);
 
-//  IMPORTANT: NO server.listen()
-//  IMPORTANT: NO socket.io on Vercel
+// IMPORTANT: NO server.listen() (Vercel serverless)
 
 module.exports = app;
