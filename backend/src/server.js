@@ -16,36 +16,34 @@ const { errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
 
-// =========================
-// CORS (SAFE FOR RENDER)
-// =========================
+// Connect Database
+connectDB();
+
+// CORS
 app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Body parser
+// Body Parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ROOT
-app.get("/", (req, res) => {
-  res.send("CodeSync Backend is Running");
+// Root Route
+app.get('/', (req, res) => {
+  res.send('CodeSync Backend is Running');
 });
 
-// HEALTH
-app.get("/health", (req, res) => {
+// Health Check
+app.get('/health', (req, res) => {
   res.json({
-    status: "OK",
-    message: "CodeSync Backend is running smoothly"
+    status: 'OK',
+    message: 'CodeSync Backend is running smoothly'
   });
 });
 
-// DB
-connectDB();
-
-// ROUTES
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/problems', problemRoutes);
@@ -54,7 +52,14 @@ app.use('/api/code', codeRoutes);
 app.use('/api/contests', contestRoutes);
 app.use('/api/interviews', interviewRoutes);
 
-// ERROR HANDLER
+// Error Handler
 app.use(errorHandler);
 
-module.exports = app;
+// Start Server
+const PORT = process.env.PORT || 10000;
+
+app.listen(PORT, () => {
+  console.log(
+    `Server running in ${process.env.NODE_ENV || 'production'} mode on port ${PORT}`
+  );
+});
