@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: "https://codesync-backend-plvx.onrender.com/api",
+  baseURL: "https://codesync-qq9p.onrender.com/api",
   timeout: 30000,
 });
 
